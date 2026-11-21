@@ -1,0 +1,5 @@
+out/
+cache/
+data/naturalearth/
+__pycache__/
+*.pyc
