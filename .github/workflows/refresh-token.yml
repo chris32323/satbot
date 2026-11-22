@@ -1,5 +1,25 @@
-out/
-cache/
-data/naturalearth/
-__pycache__/
-*.pyc
+name: Refresh Instagram token
+
+on:
+  schedule:
+    - cron: "47 3 * * 1"          # every Monday; long-lived tokens expire after 60 days
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: Refresh token and store it as repository secret
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}          # fine-grained PAT with "Secrets: Read and write" on this repo
+        run: |
+          NEW=$(python -m bot.main refresh-token | tail -n1)
+          echo "::add-mask::$NEW"
+          gh secret set IG_ACCESS_TOKEN --repo "${{ github.repository }}" --body "$NEW"
+          echo "Token refreshed."
