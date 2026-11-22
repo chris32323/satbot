@@ -1,0 +1,18 @@
+{
+  "glass_alpha": 180,
+  "glass_blur": 14,
+  "glass_border_alpha": 110,
+  "vignette_top": 120,
+  "vignette_bottom": 160,
+  "intro_dim": 0.6,
+  "title_y": 920,
+  "hud_y": 72,
+  "timer_radius": 104,
+  "timer_ring": 16,
+  "timer_y": 304,
+  "card_y": 1590,
+  "card_height": 220,
+  "card_radius": 24,
+  "fact_size": 30,
+  "map_border_alpha": 200
+}
