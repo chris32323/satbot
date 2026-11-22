@@ -12,6 +12,19 @@
         "Cape Town, South Africa",
         "Stromboli, Italy"
       ]
+    },
+    {
+      "date": "2026-11-22T23:51:40+00:00",
+      "media_id": "18137443750785164",
+      "permalink": "https://www.instagram.com/reel/DgEBytYAi2n/",
+      "location_ids": [
+        "miami",
+        "isle-of-wight"
+      ],
+      "places": [
+        "Miami, USA",
+        "Isle of Wight, United Kingdom"
+      ]
     }
   ],
   "no_coverage": {}
