@@ -1,25 +1,148 @@
-name: Refresh Instagram token
+name: Daily Satellite Reel
 
 on:
   schedule:
-    - cron: "47 3 * * 1"          # every Monday; long-lived tokens expire after 60 days
+    - cron: "43 18 * * *"        # every day 18:43 UTC (19:43 Berlin winter time / 20:43 summer time)
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only render + upload the video, do NOT post to Instagram"
+        type: boolean
+        default: true
+      improve_design:
+        description: "One-time: let OpenAI review the design and improve it (a few cents, saved to data/design.json)"
+        type: boolean
+        default: false
+      prepare_voices:
+        description: "One-time: record ALL voice lines into data/voice/ (ElevenLabs: about 4,800 credits, then free)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write                 # create releases (video hosting) + commit history.json / voice cache
+
+concurrency:
+  group: satbot
+  cancel-in-progress: false
+
+env:                              # settings for every step (empty variables = default values)
+  ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  ELEVEN_VOICE_ID: ${{ vars.ELEVEN_VOICE_ID }}
+  ELEVEN_VOICE_NAME: ${{ vars.ELEVEN_VOICE_NAME }}
+  ELEVEN_MODEL: ${{ vars.ELEVEN_MODEL }}
+  ELEVEN_STABILITY: ${{ vars.ELEVEN_STABILITY }}
+  ELEVEN_SIMILARITY: ${{ vars.ELEVEN_SIMILARITY }}
+  ELEVEN_BUDGET: ${{ vars.ELEVEN_BUDGET }}
+  VOICE_QA_TRIES: ${{ vars.VOICE_QA_TRIES }}
+  VOICE_MAX_PITCH_HZ: ${{ vars.VOICE_MAX_PITCH_HZ }}
+  VOICE_MAX_JUMPS: ${{ vars.VOICE_MAX_JUMPS }}
+  VOICE_MAX_SWING: ${{ vars.VOICE_MAX_SWING }}
+  VOICE_AI_CHECK: ${{ vars.VOICE_AI_CHECK }}
+  AUDIO_FX: ${{ vars.AUDIO_FX }}
+  AUDIO_WARMTH: ${{ vars.AUDIO_WARMTH }}
+  AUDIO_REVERB: ${{ vars.AUDIO_REVERB }}
+  AUDIO_DEESSER: ${{ vars.AUDIO_DEESSER }}
+  VISION_MODEL: ${{ vars.VISION_MODEL }}
+  VISION_CHECK: ${{ vars.VISION_CHECK }}
+  DESIGN_MODEL: ${{ vars.DESIGN_MODEL }}
+  ROUNDS_PER_REEL: ${{ vars.ROUNDS_PER_REEL }}
+  RADIUS_KM: ${{ vars.RADIUS_KM }}
+  REVEAL_KM: ${{ vars.REVEAL_KM }}
+  TITLE_EDITION: ${{ vars.TITLE_EDITION }}
+  S2_MAX_CLOUD: ${{ vars.S2_MAX_CLOUD }}
+  HASHTAGS: ${{ vars.HASHTAGS }}
 
 jobs:
-  refresh:
+  reel:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests
-      - name: Refresh token and store it as repository secret
-        env:
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          GH_TOKEN: ${{ secrets.GH_PAT }}          # fine-grained PAT with "Secrets: Read and write" on this repo
+          cache: pip
+
+      - name: Install ffmpeg + Python packages
         run: |
-          NEW=$(python -m bot.main refresh-token | tail -n1)
-          echo "::add-mask::$NEW"
-          gh secret set IG_ACCESS_TOKEN --repo "${{ github.repository }}" --body "$NEW"
-          echo "Token refreshed."
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          pip install -r requirements.txt
+
+      - name: Cache map data
+        uses: actions/cache@v4
+        with:
+          path: data/naturalearth
+          key: naturalearth-borders-v1
+
+      - name: Download map data (Natural Earth)
+        run: bash scripts/fetch_assets.sh
+
+      - name: Improve the design with OpenAI (one-time, only if improve_design is ticked)
+        if: github.event_name == 'workflow_dispatch' && inputs.improve_design == true
+        run: python -m bot.main design --out out
+
+      - name: Upload design before/after images
+        if: github.event_name == 'workflow_dispatch' && inputs.improve_design == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-before-after
+          path: |
+            out/design_before.jpg
+            out/design_after.jpg
+            out/design_report.txt
+          if-no-files-found: ignore
+
+      - name: Record all voice lines (one-time, only if prepare_voices is ticked)
+        if: github.event_name == 'workflow_dispatch' && inputs.prepare_voices == true
+        run: python -m bot.main voices --out out
+
+      - name: Render reel (Sentinel-2 satellite imagery + ElevenLabs voice)
+        run: python -m bot.main render --out out
+
+      - name: Upload preview stills
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview
+          path: |
+            out/preview_*.jpg
+            out/caption.txt
+            out/meta.json
+          if-no-files-found: ignore
+
+      - name: Host video as GitHub release asset (public URL for Instagram)
+        id: host
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="reel-$(date -u +%Y%m%d-%H%M%S)"
+          gh release create "$TAG" out/reel.mp4 --title "$TAG" --notes-file out/caption.txt
+          echo "url=https://github.com/${{ github.repository }}/releases/download/$TAG/reel.mp4" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to Instagram
+        if: github.event_name == 'schedule' || inputs.dry_run == false
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: python -m bot.main publish --out out --video-url "${{ steps.host.outputs.url }}"
+
+      - name: Save history + voice cache + design (also keeps the schedule alive)
+        if: always()
+        run: |
+          git config user.name "satbot"
+          git config user.email "satbot@users.noreply.github.com"
+          git add data/history.json
+          git add data/voice 2>/dev/null || true
+          git add data/design.json 2>/dev/null || true
+          git commit -m "history + voice cache: $(date -u +%F)" || echo "nothing to commit"
+          git push || true
+
+      - name: Delete old video releases (keep last 10)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 100 --json tagName,createdAt -q 'sort_by(.createdAt) | reverse | .[10:] | .[].tagName' \
+            | grep '^reel-' | while read -r t; do gh release delete "$t" --yes --cleanup-tag; done || true
