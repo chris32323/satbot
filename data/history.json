@@ -25,6 +25,19 @@
         "Miami, USA",
         "Isle of Wight, United Kingdom"
       ]
+    },
+    {
+      "date": "2026-11-23T19:21:26+00:00",
+      "media_id": "17958350715271996",
+      "permalink": "https://www.instagram.com/reel/DgGHwJolCfa/",
+      "location_ids": [
+        "meeting-of-waters",
+        "flevoland"
+      ],
+      "places": [
+        "Meeting of the Waters, Manaus, Brazil",
+        "Flevoland, Netherlands"
+      ]
     }
   ],
   "no_coverage": {
