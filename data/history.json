@@ -27,5 +27,7 @@
       ]
     }
   ],
-  "no_coverage": {}
+  "no_coverage": {
+    "taal": "2026-11-23"
+  }
 }
