@@ -17,6 +17,14 @@ on:
         description: "One-time: record ALL voice lines into data/voice/ (ElevenLabs: about 4,800 credits, then free)"
         type: boolean
         default: false
+      youtube_test:
+        description: "Test YouTube: upload this video as PRIVATE to YouTube (works together with dry_run)"
+        type: boolean
+        default: false
+      tiktok_test:
+        description: "Test TikTok: post this video to TikTok now (PUBLIC, works together with dry_run)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write                 # create releases (video hosting) + commit history.json / voice cache
@@ -127,6 +135,23 @@ jobs:
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
         run: python -m bot.main publish --out out --video-url "${{ steps.host.outputs.url }}"
+
+      - name: Publish to YouTube Shorts (skipped if the YT_ secrets are not set)
+        if: ${{ !cancelled() && steps.host.outcome == 'success' && (github.event_name == 'schedule' || inputs.dry_run == false || inputs.youtube_test == true) }}
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_PRIVACY: ${{ inputs.youtube_test == true && 'private' || vars.YT_PRIVACY }}
+        run: python -m bot.youtube --out out
+
+      - name: Publish to TikTok via Zernio (skipped if ZERNIO_API_KEY is not set)
+        if: ${{ !cancelled() && steps.host.outcome == 'success' && (github.event_name == 'schedule' || inputs.dry_run == false || inputs.tiktok_test == true) }}
+        env:
+          ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+          TIKTOK_ACCOUNT_ID: ${{ secrets.TIKTOK_ACCOUNT_ID }}
+          TIKTOK_PRIVACY: ${{ vars.TIKTOK_PRIVACY }}
+        run: python -m bot.tiktok --out out --video-url "${{ steps.host.outputs.url }}"
 
       - name: Save history + voice cache + design (also keeps the schedule alive)
         if: always()
