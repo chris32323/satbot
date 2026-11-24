@@ -38,6 +38,19 @@
         "Meeting of the Waters, Manaus, Brazil",
         "Flevoland, Netherlands"
       ]
+    },
+    {
+      "date": "2026-11-24T04:08:20+00:00",
+      "media_id": "18091949261700437",
+      "permalink": "https://www.instagram.com/reel/DgHD88MCQAT/",
+      "location_ids": [
+        "vesuvius",
+        "almeria"
+      ],
+      "places": [
+        "Vesuvius and Naples, Italy",
+        "Greenhouses of Almería, Spain"
+      ]
     }
   ],
   "no_coverage": {
