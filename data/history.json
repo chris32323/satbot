@@ -51,9 +51,24 @@
         "Vesuvius and Naples, Italy",
         "Greenhouses of Almería, Spain"
       ]
+    },
+    {
+      "date": "2026-11-25T02:49:10+00:00",
+      "media_id": "18154913101548547",
+      "permalink": "https://www.instagram.com/reel/DgJfutHsFmj/",
+      "location_ids": [
+        "teide",
+        "cape-cod"
+      ],
+      "places": [
+        "Mount Teide, Tenerife, Spain",
+        "Cape Cod, USA"
+      ]
     }
   ],
   "no_coverage": {
-    "taal": "2026-11-23"
+    "taal": "2026-11-23",
+    "panama-canal": "2026-11-25",
+    "easter-island": "2026-11-25"
   }
 }
