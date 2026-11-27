@@ -77,11 +77,25 @@
         "Grand Canyon, USA",
         "Super Pit, Kalgoorlie, Australia"
       ]
+    },
+    {
+      "date": "2026-11-27T01:57:44+00:00",
+      "media_id": "18439995646195166",
+      "permalink": "https://www.instagram.com/reel/DgOjZnWONgg/",
+      "location_ids": [
+        "cape-of-good-hope",
+        "bermuda"
+      ],
+      "places": [
+        "Cape of Good Hope, South Africa",
+        "Bermuda (UK)"
+      ]
     }
   ],
   "no_coverage": {
     "taal": "2026-11-23",
     "panama-canal": "2026-11-25",
-    "easter-island": "2026-11-25"
+    "easter-island": "2026-11-25",
+    "lake-natron": "2026-11-27"
   }
 }
